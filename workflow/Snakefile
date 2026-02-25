@@ -1,0 +1,68 @@
+# List your sample names (without file extension)
+samples = [
+    "SRR15618886",
+    "SRR15618887",
+    "SRR15618888",
+    "SRR15618891",
+    "SRR15618892",
+    "SRR15618893"
+]
+
+input_path = "/opt/students/asma.malik/raw_data_exercise_20260218"
+
+# Final targets
+rule all:
+    input:
+        expand("results/fastqc/{sample}_{stage}_fastqc.html",
+               sample=samples,
+               stage=["raw", "filtered"]),
+        expand("results/fastp/{sample}_fastp.html", sample=samples),
+        expand("results/fastp/{sample}_fastp.json", sample=samples),
+        expand("results/alignment/{sample}.bam", sample=samples)
+
+# FastQC rule (raw + filtered)
+rule fastqc:
+    input:
+        expand("{path}/{{sample}}_{{stage}}.fastq", path=input_path)
+    output:
+        html="results/fastqc/{sample}_{stage}_fastqc.html",
+        zip="results/fastqc/{sample}_{stage}_fastqc.zip"
+    conda:
+        "envs/rnaseq_preprocess.yaml"
+    shell:
+        """
+        fastqc {input} --outdir results/fastqc
+        """
+
+# fastp trimming rule
+rule fastp:
+    input:
+        expand("{path}/{{sample}}_raw.fastq", path=input_path)
+    output:
+        filtered=expand("{path}/{{sample}}_filtered.fastq", path=input_path),
+        html="results/fastp/{sample}_fastp.html",
+        json="results/fastp/{sample}_fastp.json"
+    conda:
+        "envs/rnaseq_preprocess.yaml"
+    shell:
+        """
+        fastp -i {input} \
+              -o {output.filtered} \
+              -h {output.html} \
+              -j {output.json}
+        """
+
+# HISAT2 alignment rule
+rule hisat2:
+    input:
+        fastq = expand("{path}/{{sample}}_filtered.fastq", path=input_path)
+    output:
+        bam = "results/alignment/{sample}.bam"
+    conda:
+        "envs/rnaseq_preprocess.yaml"
+    shell:
+        """
+        hisat2 -x reference/mouse_index \
+               -U {input.fastq} \
+        | samtools sort -o {output.bam}
+        """
