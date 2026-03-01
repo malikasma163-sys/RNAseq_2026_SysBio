@@ -1,0 +1,8 @@
+.snakemake/
+results/
+workflow/.snakemake/
+workflow/results/
+*.bam
+*.fastq
+*.html
+*.json

@@ -1,0 +1,14 @@
+samples:
+  - SRR15618886
+  - SRR15618887
+  - SRR15618888
+  - SRR15618891
+  - SRR15618892
+  - SRR15618893
+
+input_path: "/opt/students/asma.malik/raw_data_exercise_20260218"
+
+genome_index_dir: "/opt/shared/SYSBIO/Mus_musculus.GRCm39/genome"
+gtf_file: "/opt/shared/SYSBIO/Mus_musculus.GRCm39/genome.gtf"
+
+multiqc_extra: "--verbose"
