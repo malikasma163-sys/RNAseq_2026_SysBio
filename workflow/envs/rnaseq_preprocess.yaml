@@ -5,7 +5,8 @@ channels:
 dependencies:
   - fastqc=0.12.1
   - openjdk=11
+  - multiqc=1.14
   - bioconda::samtools
   - bioconda::fastp=0.24
   - bioconda::hisat2
-  - bioconda::subread=2.0.8
+  - bioconda::subread=2.0.8 

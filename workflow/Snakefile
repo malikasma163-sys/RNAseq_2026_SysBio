@@ -1,119 +1,18 @@
-############################################
-# RNA-seq Snakemake workflow (fixed)
-# Includes: FastQC (raw+filtered), fastp, HISAT2, featureCounts, MultiQC
-############################################
+import os
+import pandas as pd
 
-# List your sample names (without file extension)
-samples = [
-    "SRR15618886",
-    "SRR15618887",
-    "SRR15618888",
-    "SRR15618891",
-    "SRR15618892",
-    "SRR15618893"
-]
+configfile: "config/config.yaml"
 
-input_path = "/opt/students/asma.malik/raw_data_exercise_20260218"
+include: "rules/qc.smk"
+include: "rules/alignment.smk"
+include: "rules/reportQC.smk"
+include: "rules/count.smk"
+include: "rules/deg.smk"
 
-
+# The 'all' rule defines the final targets of your pipeline
 rule all:
-    input:
-        expand("results/fastqc/{sample}_{stage}_fastqc.html",
-               sample=samples, stage=["raw", "filtered"]),
-        expand("results/fastp/{sample}_fastp.html", sample=samples),
-        expand("results/fastp/{sample}_fastp.json", sample=samples),
-        expand("results/alignment/{sample}.bam", sample=samples),
-        expand("results/counts/{sample}.featureCounts.txt", sample=samples),
-        expand("results/counts/{sample}.featureCounts.txt.summary", sample=samples),
-        "results/multiqc/multiqc_report.html"
+   input:
+       "results/multiqc/multiqc_report.html",
+       "results/DEG/DEG_report.html"
 
 
-# FastQC rule (raw + filtered)
-rule fastqc:
-    input:
-        lambda wc: f"{input_path}/{wc.sample}_{wc.stage}.fastq"
-    output:
-        html="results/fastqc/{sample}_{stage}_fastqc.html",
-        zip="results/fastqc/{sample}_{stage}_fastqc.zip"
-    conda:
-        "envs/rnaseq_preprocess.yaml"
-    shell:
-        """
-        mkdir -p results/fastqc
-        fastqc {input} --outdir results/fastqc
-        """
-
-
-# fastp trimming rule
-rule fastp:
-    input:
-        lambda wc: f"{input_path}/{wc.sample}_raw.fastq"
-    output:
-        filtered="results/fastp_filtered/{sample}_filtered.fastq",
-        html="results/fastp/{sample}_fastp.html",
-        json="results/fastp/{sample}_fastp.json"
-    conda:
-        "envs/rnaseq_preprocess.yaml"
-    shell:
-        """
-        mkdir -p results/fastp results/fastp_filtered
-        fastp -i {input} \
-              -o {output.filtered} \
-              -h {output.html} \
-              -j {output.json}
-        """
-
-
-# HISAT2 alignment rule (uses the filtered FASTQ produced by fastp rule above)
-rule hisat2:
-    input:
-        fastq="results/fastp_filtered/{sample}_filtered.fastq"
-    output:
-        bam="results/alignment/{sample}.bam"
-    conda:
-        "envs/rnaseq_preprocess.yaml"
-    shell:
-        """
-        mkdir -p results/alignment
-        hisat2 -x reference/mouse_index -U {input.fastq} \
-        | samtools sort -T results/alignment/{wildcards.sample}.tmp -o {output.bam}
-        """
-
-
-# featureCounts rule (gene-level quantification)
-rule count:
-    input:
-        bam="results/alignment/{sample}.bam"
-    output:
-        counts="results/counts/{sample}.featureCounts.txt",
-        summary="results/counts/{sample}.featureCounts.txt.summary"
-    conda:
-        "envs/rnaseq_preprocess.yaml"
-    shell:
-        """
-        mkdir -p results/counts
-        featureCounts \
-            -a reference/Mus_musculus.GRCm39.110.gtf \
-            -o {output.counts} \
-            {input.bam}
-        """
-
-
-# MultiQC summary report
-rule multiqc:
-    input:
-        expand("results/fastqc/{sample}_{stage}_fastqc.html",
-               sample=samples, stage=["raw", "filtered"]),
-        expand("results/fastp/{sample}_fastp.html", sample=samples),
-        expand("results/fastp/{sample}_fastp.json", sample=samples),
-        expand("results/counts/{sample}.featureCounts.txt", sample=samples),
-        expand("results/counts/{sample}.featureCounts.txt.summary", sample=samples)
-    output:
-        "results/multiqc/multiqc_report.html"
-    conda:
-        "envs/multiqc.yaml"
-    shell:
-        """
-        mkdir -p results/multiqc
-        multiqc results -o results/multiqc
-        """

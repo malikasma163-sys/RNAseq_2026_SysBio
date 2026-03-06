@@ -5,10 +5,7 @@ samples:
   - SRR15618891
   - SRR15618892
   - SRR15618893
-
-input_path: "/opt/students/asma.malik/raw_data_exercise_20260218"
-
-genome_index_dir: "/opt/shared/SYSBIO/Mus_musculus.GRCm39/genome"
-gtf_file: "/opt/shared/SYSBIO/Mus_musculus.GRCm39/genome.gtf"
-
-multiqc_extra: "--verbose"
+input_path: /opt/students/asma.malik/raw_data_exercise_20260218
+samplesheet: config/samplesheet.tsv
+genome_index: workflow/reference/mouse_index
+gtf: workflow/reference/Mus_musculus.GRCm39.110.gtf
